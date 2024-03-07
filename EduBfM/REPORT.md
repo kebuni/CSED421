@@ -1,8 +1,8 @@
 # EduBfM Report
 
-Name:
+Name: Gyeongbhin Lim
 
-Student id:
+Student id: 20180916
 
 # Problem Analysis
 
