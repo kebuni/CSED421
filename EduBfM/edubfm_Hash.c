@@ -188,9 +188,15 @@ Four edubfm_LookUp(
 Four edubfm_DeleteAll(void)
 {
     Two 	i;
+    Two     type;
     Four        tableSize;
     
-
+    for (type = 0 ; type < NUM_BUF_TYPES ; type++){
+        tableSize = HASHTABLESIZE(type);
+        for (i = 0 ; i < tableSize ; i++){
+            BI_HASHTABLEENTRY(type,i) = NIL;
+        }
+    }
 
     return(eNOERROR);
 

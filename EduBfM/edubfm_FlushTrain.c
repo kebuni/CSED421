@@ -71,7 +71,22 @@ Four edubfm_FlushTrain(
 	/* Error check whether using not supported functionality by EduBfM */
 	if (RM_IS_ROLLBACK_REQUIRED()) ERR(eNOTSUPPORTED_EDUBFM);
 
+    BfMHashKey key;
+    key.pageNo = trainId->pageNo;
+    key.volNo = trainId -> volNo;
+    CHECKKEY(&key);    /*@ check validity of key */
 
+    index = edubfm_LookUp(trainId, type);
+    if (index == NIL) ERR(eBADBUFINDEX_BFM);
+
+    while( !EQUALKEY(&key, &(BI_KEY(type, index))) ){
+        index = BI_NEXTHASHENTRY(type, index);
+        if (index == NIL) ERR(eBADBUFINDEX_BFM);
+    }
+          
+    e = RDsM_WriteTrain(BI_BUFFER(type, index), trainId, BI_BUFSIZE(type));
+    if (e != eNOERROR)
+        return e;
 	
     return( eNOERROR );
 

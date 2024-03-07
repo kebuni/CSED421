@@ -67,12 +67,11 @@ Four EduBfM_FreeTrain(
     if (IS_BAD_BUFFERTYPE(type)) ERR(eBADBUFFERTYPE_BFM);	
 
     index = edubfm_LookUp(trainId, type);
-    if (index == -1) ERR(eBADBUFINDEX_BFM);
+    if (index == NIL) ERR(eBADBUFINDEX_BFM);
 
-    while( !(trainId->pageNo == BI_KEY(type, index).pageNo &&  \
-    trainId->volNo == BI_KEY(type, index).volNo ) ){
+    while (!EQUALKEY(trainId, &(BI_KEY(type, index)))){
         index = BI_NEXTHASHENTRY(type, index);
-        if (index == -1) ERR(eBADBUFINDEX_BFM);
+        if (index == NIL) ERR(eBADBUFINDEX_BFM);
     }
         
     if (BI_FIXED(type, index) > 0)

@@ -58,8 +58,21 @@ Four EduBfM_DiscardAll(void)
     Four 	e;			/* error */
     Two 	i;			/* index */
     Four 	type;			/* buffer type */
+    Two     bufSize;
 
-
+    for (type = 0 ; type < NUM_BUF_TYPES ; type++){
+        bufSize = BI_NBUFS(type);
+        for (i = 0 ; i < bufSize ; i++){
+            SET_NILBFMHASHKEY(BI_KEY(type, i));
+            BI_FIXED(type, i) = 0;
+            BI_BITS(type, i) = ALL_0;
+            //BI_NEXTHASHENTRY(type, i) = NIL;
+        }
+    }
+    
+    e = edubfm_DeleteAll();
+    if (e != eNOERROR)
+        return(e);
 
     return(eNOERROR);
 
