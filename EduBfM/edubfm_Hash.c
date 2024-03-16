@@ -91,7 +91,11 @@ Four edubfm_Insert(
     if( (index < 0) || (index > BI_NBUFS(type)) )
         ERR( eBADBUFINDEX_BFM );
 
-   
+    hashValue = BFM_HASH(key,type);
+    if (BI_HASHTABLEENTRY(type, hashValue) != NIL){
+        BI_NEXTHASHENTRY(type, index) = BI_HASHTABLEENTRY(type, hashValue);
+    }
+    BI_HASHTABLEENTRY(type, hashValue) = index;
 
     return( eNOERROR );
 
@@ -126,9 +130,25 @@ Four edubfm_Delete(
 
     CHECKKEY(key);    /*@ check validity of key */
 
+    hashValue = BFM_HASH(key,type);
+    i = BI_HASHTABLEENTRY(type, hashValue);
 
+    if(i==NIL){
+        ERR( eNOTFOUND_BFM );
+    }
 
-    ERR( eNOTFOUND_BFM );
+    if(EQUALKEY(&BI_KEY(type, i), key)){
+        BI_HASHTABLEENTRY(type, hashValue) = BI_NEXTHASHENTRY(type, i);
+    }
+    else{
+        while(!EQUALKEY(&BI_KEY(type, i), key)){
+            prev = i;
+            i = BI_NEXTHASHENTRY(type, i);
+        }
+        BI_NEXTHASHENTRY(type, prev) = BI_NEXTHASHENTRY(type, i);
+    }
+
+    return(eNOERROR);
 
 }  /* edubfm_Delete */
 
@@ -162,7 +182,8 @@ Four edubfm_LookUp(
     CHECKKEY(key);    /*@ check validity of key */
 
     hashValue = BFM_HASH(key, type);
-    return BI_HASHTABLEENTRY(type, hashValue);
+    i = BI_HASHTABLEENTRY(type, hashValue);
+    return i;
 
     // return(NOTFOUND_IN_HTABLE);
     

@@ -271,10 +271,20 @@ pageNo 217 is freed from buffer using FreeTrain()
 *Test 1_4 :  Test for EduBfM_FreeTrain() when fixed bit of freeed existent pages is 0
 ->Free five pages whose fixed bit is 0
 
+fixed counter is less than 0!!!
+trainId = {1000, 209}
 pageNo 209 is freed from buffer using FreeTrain()
+fixed counter is less than 0!!!
+trainId = {1000, 211}
 pageNo 211 is freed from buffer using FreeTrain()
+fixed counter is less than 0!!!
+trainId = {1000, 213}
 pageNo 213 is freed from buffer using FreeTrain()
+fixed counter is less than 0!!!
+trainId = {1000, 215}
 pageNo 215 is freed from buffer using FreeTrain()
+fixed counter is less than 0!!!
+trainId = {1000, 217}
 pageNo 217 is freed from buffer using FreeTrain()
 
 ---------------------------------- Result ----------------------------------
