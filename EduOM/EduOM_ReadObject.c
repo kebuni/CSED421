@@ -108,7 +108,7 @@ Four EduOM_ReadObject(
     
     if (buf == NULL) ERR(eBADUSERBUF_OM);
 
-    
+    MAKE_PAGEID(pid, oid->volNo, oid->pageNo);
 
     return(length);
     

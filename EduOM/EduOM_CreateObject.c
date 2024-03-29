@@ -104,7 +104,16 @@ Four EduOM_CreateObject(
 	/* Error check whether using not supported functionality by EduOM */
 	if(ALIGNED_LENGTH(length) > LRGOBJ_THRESHOLD) ERR(eNOTSUPPORTED_EDUOM);
     
+    objectHdr.properties = 0x0;
+    objectHdr.length = 0;
+    if (objHdr == NULL)
+        objectHdr.tag = 0;
+    else
+        objectHdr.tag = objHdr->tag;
 
+    e = eduom_CreateObject(catObjForFile, nearObj, &objectHdr, length, data, oid);
+    if (e != eNOERROR)
+        ERR(e);
     
     return(eNOERROR);
 }
@@ -159,10 +168,11 @@ Four eduom_CreateObject(
     SlottedPage *catPage;	/* pointer to buffer containing the catalog */
     FileID      fid;		/* ID of file where the new object is placed */
     Two         eff;		/* extent fill factor of file */
-    Boolean     isTmp;
+    Boolean     AvailSpaceListExist;
     PhysicalFileID pFid;
+
     
-    
+
     /*@ parameter checking */
     
     if (catObjForFile == NULL) ERR(eBADCATALOGOBJECT_OM);
@@ -172,8 +182,183 @@ Four eduom_CreateObject(
     /* Error check whether using not supported functionality by EduOM */
     if(ALIGNED_LENGTH(length) > LRGOBJ_THRESHOLD) ERR(eNOTSUPPORTED_EDUOM);
     
+    // 1. Calculate the size of the free space required for inserting the object
+    alignedLen = ALIGNED_LENGTH(length);
+    neededSpace = sizeof(ObjectHdr) + sizeof(SlottedPageSlot) + alignedLen;
+
+    // 2. Select a page to insert the object
+    e = BfM_GetTrain(catObjForFile, (char**)&catPage, PAGE_BUF);
+    if (e < eNOERROR) ERR(e);
+
+    GET_PTR_TO_CATENTRY_FOR_DATA(catObjForFile, catPage, catEntry);
+    MAKE_PHYSICALFILEID(pFid, catEntry->fid.volNo, catEntry->firstPage);
+    e = RDsM_PageIdToExtNo(&pFid, &firstExt);
+    if (e < eNOERROR) ERR(e);
+
+    // 2-1. nearObj given as a parameter is not NULL
+    if (nearObj != NULL){
+        MAKE_PAGEID(nearPid, nearObj->volNo, nearObj->pageNo);
+        e = BfM_GetTrain(&nearPid, (char**)&apage, PAGE_BUF);
+        if (e < eNOERROR) ERR(e);
+        // 2-1-1. there is available space in the nearPage
+        if (SP_FREE(apage) >= neededSpace){
+            // Select the page as the page to insert the object.
+            MAKE_PAGEID(pid, nearPid.volNo, nearPid.pageNo);
+            // Delete the selected page from the current available space list
+            e = om_RemoveFromAvailSpaceList(catObjForFile, &pid, apage);
+            if (e < eNOERROR) ERR(e);
+            // Compact the selected page if necessary
+            if (SP_CFREE(apage) < neededSpace) {
+                e = OM_CompactPage(apage, nearObj->slotNo);
+                if(e < eNOERROR) ERR(e);
+            }
+        }
+        // 2-1-2. there is no avilable space in the nearPage
+        else {
+            e = BfM_FreeTrain(&nearPid, PAGE_BUF);
+            if (e < eNOERROR) ERR(e);
+            // Allocate a new page to insert the object into.
+            e = RDsM_AllocTrains(catEntry->fid.volNo, firstExt, &nearPid, catEntry->eff, 1, PAGESIZE2, &pid);
+            if (e < eNOERROR) ERR(e);
+            // Initialize the selected page's header
+            e = BfM_GetNewTrain(&pid, (char**)&apage, PAGE_BUF);
+            if (e < eNOERROR) ERR(e);
+            apage->header.flags = 0x2;
+            apage->header.free = 0;
+            apage->header.unused = 0;
+            apage->header.fid = catEntry->fid;
+            // Insert the page as the next page of the page stroing nearObj into the list of pages of the file.
+            e = om_FileMapAddPage(catObjForFile, &nearPid, &pid);
+            if (e < eNOERROR) ERR(e);
+        }
+    }
+    // 2-2. nearObj given as a parameter is NULL
+    else {
+        PageNo *availListPageNo = -1;
+        AvailSpaceListExist = FALSE;
+        if (neededSpace <= SP_10SIZE){
+            availListPageNo = catEntry->availSpaceList10;
+            MAKE_PAGEID(pid, pFid.volNo, catEntry->availSpaceList10);
+            AvailSpaceListExist = TRUE;
+        }  
+        else if (neededSpace <= SP_20SIZE){
+            availListPageNo = catEntry->availSpaceList10;
+            MAKE_PAGEID(pid, pFid.volNo, catEntry->availSpaceList10);
+            AvailSpaceListExist = TRUE;
+        }       
+        else if (neededSpace <= SP_30SIZE){
+            availListPageNo = catEntry->availSpaceList20;
+            MAKE_PAGEID(pid, pFid.volNo, catEntry->availSpaceList20);
+            AvailSpaceListExist = TRUE;
+        }    
+        else if (neededSpace <= SP_40SIZE){
+            availListPageNo = catEntry->availSpaceList30;
+            MAKE_PAGEID(pid, pFid.volNo, catEntry->availSpaceList30);
+            AvailSpaceListExist = TRUE;
+        }  
+        else if (neededSpace <= SP_50SIZE){
+            availListPageNo = catEntry->availSpaceList40;
+            MAKE_PAGEID(pid, pFid.volNo, catEntry->availSpaceList40);
+            AvailSpaceListExist = TRUE;
+        }
+        else {
+            availListPageNo = catEntry->availSpaceList50;
+            MAKE_PAGEID(pid, pFid.volNo, catEntry->availSpaceList50);
+            AvailSpaceListExist = TRUE;
+        }
+
+        // 2-2-1. there is an available space list
+        if (availListPageNo != -1){
+        //if (AvailSpaceListExist == TRUE){
+            // select the first page of the corresponding available space list
+            //pid.volNo = pFid.volNo;
+            MAKE_PAGEID(pid, pFid.volNo, availListPageNo);
+            e = BfM_GetTrain(&pid, (char**)&apage, PAGE_BUF);
+            if (e < eNOERROR) ERR(e);
+            // delete the page from current available space list
+            e = om_RemoveFromAvailSpaceList(catObjForFile, &pid, apage);
+            if (e < eNOERROR) ERR(e);
+            // compact the selected page if necessary
+            if (SP_CFREE(apage) < neededSpace) {
+                e = OM_CompactPage(apage, nearObj->slotNo);
+                if(e < eNOERROR) ERR(e);
+            }
+        }
+        // 2-2-2. there is no available space list
+        else {
+            MAKE_PAGEID(pid, pFid.volNo, catEntry->lastPage);
+            e = BfM_GetTrain(&pid, (char**)&apage, PAGE_BUF);
+            if (e < eNOERROR) ERR(e);
+            // 2-2-2-1. there is available space in the file's last page
+            if (SP_FREE(apage) >= neededSpace){        
+                e = om_RemoveFromAvailSpaceList(catObjForFile, &pid, apage);
+                if(e < 0) ERR(e);        
+                // compact the selected page if necessary
+                if (SP_CFREE(apage) < neededSpace) {
+                    e = OM_CompactPage(apage, nearObj->slotNo);
+                    if(e < eNOERROR) ERR(e);
+                }   
+            }
+            // 2-2-2-2. there is no available space in the file's last page
+            else {
+                e = BfM_FreeTrain(&pid, PAGE_BUF);
+                if (e < eNOERROR) ERR(e);
+                MAKE_PAGEID(nearPid, pFid.volNo, catEntry->lastPage);
+                // Allocate a new page to insert the object to
+                e = RDsM_AllocTrains(catEntry->fid.volNo, firstExt, &nearPid, catEntry->eff, 1, PAGESIZE2, &pid);
+                if (e < eNOERROR) ERR(e);
+                // Initialize the page's header
+                e = BfM_GetNewTrain(&pid, (char**)&apage, PAGE_BUF);
+                if (e < eNOERROR) ERR(e);
+                apage->header.flags = 0x2;
+                apage->header.free = 0;
+                apage->header.unused = 0;
+                apage->header.fid = catEntry->fid;
+                // Insert the page as the last page into the list of pages of the file.
+                e = om_FileMapAddPage(catObjForFile, &(catEntry->lastPage), &pid);
+                if (e < eNOERROR) ERR(e);
+            }
+        }
+        
+    }
     
+    // 3. Insert an object into the selected page
+    i = 0;
+    while (apage->slot[-i].offset != EMPTYSLOT && i < apage->header.nSlots){
+        i++;
+    }
+
+    // 3-0. Allocate an empty slot of the slot array
+    SlottedPageSlot* newSlot = &(apage->slot[-i]);
+    newSlot->offset = apage->header.free;
+
+    // 3-1. Update the object's header
+    obj = &(apage->data[newSlot->offset]);
+    obj->header.properties = objHdr->properties;
+    obj->header.tag = objHdr->tag;
+    obj->header.length = length;
+    e = om_GetUnique(&pid, &(newSlot->unique));
+    if (e < eNOERROR) ERR(e);
+    MAKE_OBJECTID(*oid, pid.volNo, pid.pageNo, i, newSlot->unique);
     
+    // 3-2. Copy the object into the selected page's contiguous free area
+    memcpy(obj->data, data, length);
+
+    // 3-3. Update the page's header 
+    apage->header.free += sizeof(ObjectHdr) + alignedLen;
+    apage->header.nSlots = MAX(apage->header.nSlots, i+1);
+    //apage->header.unique = newSlot->unique;
+
+    e = BfM_SetDirty((TrainID*)&pid, PAGE_BUF);
+    if (e < eNOERROR) ERR(e);
+    e = om_PutInAvailSpaceList(catObjForFile, &pid, apage);
+    if (e < eNOERROR) ERR(e);
+    e = BfM_FreeTrain((TrainID*)&pid, PAGE_BUF);
+    if (e < eNOERROR) ERR(e);
+    e = BfM_FreeTrain((TrainID*)catObjForFile, PAGE_BUF);
+    if (e < eNOERROR) ERR(e);
+
+    // 4. Return the ID of the object inserted
     return(eNOERROR);
-    
+
 } /* eduom_CreateObject() */

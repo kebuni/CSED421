@@ -1,8 +1,8 @@
 # EduOM Report
 
-Name:
+Name: Lim GyeongBhin
 
-Student id:
+Student id: 20180916
 
 # Problem Analysis
 
