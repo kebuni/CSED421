@@ -87,7 +87,26 @@ Four EduOM_CompactPage(
     Two    lastSlot;		/* last non empty slot */
     Two    i;			/* index variable */
 
+    // 1. Store all the objects in a page continuously from the very front of the data area.
+    tpage = *apage;
+    apageDataOffset = 0;
+    lastSlot = apage->header.nSlots - 1;
     
+    for ( i = 0; i <= lastSlot ; i++ ){
+        
+        if (tpage.slot[-i].offset == EMPTYSLOT)
+            continue;
+
+        obj = &(tpage.data[tpage.slot[-i].offset]);
+        len = sizeof(ObjectHdr) + ALIGNED_LENGTH(obj->header.length);
+        memcpy((apage->data)+apageDataOffset, tpage.data+(tpage.slot[-i].offset), len);
+        apage->slot[-i].offset = apageDataOffset;
+        apageDataOffset += len;
+    }
+
+    // 2. Update the page header (free, unused)
+    apage->header.free = apageDataOffset;
+    apage->header.unused = 0;
 
     return(eNOERROR);
     

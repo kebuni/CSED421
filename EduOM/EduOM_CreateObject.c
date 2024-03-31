@@ -209,7 +209,7 @@ Four eduom_CreateObject(
             if (e < eNOERROR) ERR(e);
             // Compact the selected page if necessary
             if (SP_CFREE(apage) < neededSpace) {
-                e = OM_CompactPage(apage, nearObj->slotNo);
+                e = EduOM_CompactPage(apage, nearObj->slotNo);
                 if(e < eNOERROR) ERR(e);
             }
         }
@@ -280,7 +280,7 @@ Four eduom_CreateObject(
             if (e < eNOERROR) ERR(e);
             // compact the selected page if necessary
             if (SP_CFREE(apage) < neededSpace) {
-                e = OM_CompactPage(apage, nearObj->slotNo);
+                e = EduOM_CompactPage(apage, nearObj->slotNo);
                 if(e < eNOERROR) ERR(e);
             }
         }
@@ -295,7 +295,7 @@ Four eduom_CreateObject(
                 if(e < 0) ERR(e);        
                 // compact the selected page if necessary
                 if (SP_CFREE(apage) < neededSpace) {
-                    e = OM_CompactPage(apage, nearObj->slotNo);
+                    e = EduOM_CompactPage(apage, nearObj->slotNo);
                     if(e < eNOERROR) ERR(e);
                 }   
             }
