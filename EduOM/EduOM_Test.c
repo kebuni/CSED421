@@ -154,7 +154,7 @@ Four EduOM_Test(Four volId, Four handle, Boolean getcharFlag){
     oid.slotNo += 2;
     oid.unique += 2;
     /* The successful default solution code is called if "Edu" is omitted from the function name in the following line */
-    OM_DestroyObject(&catalogEntry, &oid, &dlPool, &dlHead);
+    EduOM_DestroyObject(&catalogEntry, &oid, &dlPool, &dlHead);
     printf("The object ( %d, %d )  is destroyed from the page\n", oid.pageNo, oid.slotNo);
   }
 
@@ -187,7 +187,7 @@ Four EduOM_Test(Four volId, Four handle, Boolean getcharFlag){
   printf("->Destroy the last object form the 3rd page\n\n");
 
   /* The successful default solution code is called if "Edu" is omitted from the function name in the following line */
-  e = OM_DestroyObject(&catalogEntry, &lastOid, &dlPool, &dlHead);
+  e = EduOM_DestroyObject(&catalogEntry, &lastOid, &dlPool, &dlHead);
   if (e < eNOERROR) ERR(e);
   printf("The object ( %d, %d )  is destroyed from the page\n", lastOid.pageNo, lastOid.slotNo);
 
@@ -210,7 +210,7 @@ Four EduOM_Test(Four volId, Four handle, Boolean getcharFlag){
 
   do{
     /* The successful default solution code is called if "Edu" is omitted from the function name in the following line */
-    e = OM_DestroyObject(&catalogEntry, &lastOid, &dlPool, &dlHead);
+    e = EduOM_DestroyObject(&catalogEntry, &lastOid, &dlPool, &dlHead);
     if (e < eNOERROR) ERR(e);
 
     printf("The object ( %d, %d )  is destroyed from the page\n", lastOid.pageNo, lastOid.slotNo);
