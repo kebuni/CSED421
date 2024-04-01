@@ -87,7 +87,68 @@ Four EduOM_PrevObject(
     
     if (prevOID == NULL) ERR(eBADOBJECTID_OM);
 
-    
+    e = BfM_GetTrain(catObjForFile, &catPage, PAGE_BUF);
+    if (e < eNOERROR) ERR(e);
+    GET_PTR_TO_CATENTRY_FOR_DATA(catObjForFile, catPage, catEntry);
+
+    // 1-1. If curOID given as a parameter is NULL
+    if (curOID == NULL){
+        // 1-1-2. If the file is not empty : Return ID of the last object int the slot array of the file's last page
+        if (catEntry->lastPage != NULL) {
+            MAKE_PAGEID(pid, catEntry->fid.volNo, catEntry->lastPage);
+            e = BfM_GetTrain(&pid, &apage, PAGE_BUF);
+            if (e < eNOERROR) ERR(e);
+
+            i = apage->header.nSlots - 1;
+            offset = apage->slot[-i].offset;
+            obj = &(apage->data[offset]);
+
+            MAKE_OBJECTID(*prevOID, pid.volNo, pid.pageNo, i, apage->slot[-i].unique);
+            objHdr = &(obj->header);
+
+            e = BfM_FreeTrain(&pid, PAGE_BUF);
+            if (e < eNOERROR) ERR(e);
+        }
+    }
+    // 1-2. If curOID given as the parameter is not NULL
+    else {
+        // 1-2-1. search for an object corresponding to curOID
+        MAKE_PAGEID(pid, curOID->volNo, curOID->pageNo);
+        e = BfM_GetTrain(&pid, &apage, PAGE_BUF);
+        if (e < eNOERROR) ERR(e);
+        // 1-2-2-1. If the object found is the page's first obejct
+        if (curOID->slotNo == 0){
+            // 1-2-2-1-1. If the page is the first page of the file : return EOS
+            // 1-2-2-1-2. there is previous page
+            if (apage->header.pid.pageNo != catEntry->firstPage) {
+                e = BfM_FreeTrain(&pid, PAGE_BUF);
+                if (e < eNOERROR) ERR(e);
+                MAKE_PAGEID(pid, curOID->volNo, apage->header.prevPage);
+                e = BfM_GetTrain(&pid, &apage, PAGE_BUF);
+                if (e < eNOERROR) ERR(e);
+
+                i = apage->header.nSlots - 1;
+                offset = apage->slot[-i].offset;
+                obj = &(apage->data[offset]);
+                MAKE_OBJECTID(*prevOID, pid.volNo, pid.pageNo, i, apage->slot[-i].unique);
+                objHdr = &(obj->header);
+            }
+        }
+        // 1-2-2-2. If the object found is not the page's first object : return the previous object's id
+        else {
+            i = curOID->slotNo - 1;
+            offset = apage->slot[-i].offset;
+            obj = &(apage->data[offset]);
+            MAKE_OBJECTID(*prevOID, pid.volNo, pid.pageNo, i, apage->slot[-i].unique);
+            objHdr = &(obj->header);
+        }
+
+        e = BfM_FreeTrain(&pid, PAGE_BUF);
+        if (e < eNOERROR) ERR(e);
+    }
+
+    e = BfM_FreeTrain(catObjForFile, PAGE_BUF);
+    if (e < eNOERROR) ERR(e);
 
     return(EOS);
     
