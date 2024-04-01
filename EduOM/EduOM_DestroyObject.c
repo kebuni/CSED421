@@ -162,11 +162,11 @@ Four EduOM_DestroyObject(
         if (e < eNOERROR) ERR(e);
     }
     
-    e = BfM_SetDirty((TrainID*)&pid, PAGE_BUF);
+    e = BfM_SetDirty(&pid, PAGE_BUF);
     if (e < eNOERROR) ERR(e);
-    e = BfM_FreeTrain((TrainID*)&pid, PAGE_BUF);
+    e = BfM_FreeTrain(&pid, PAGE_BUF);
     if (e < eNOERROR) ERR(e);
-    e = BfM_FreeTrain((TrainID*)catObjForFile, PAGE_BUF);
+    e = BfM_FreeTrain(catObjForFile, PAGE_BUF);
     if (e < eNOERROR) ERR(e);
 
     return(eNOERROR);

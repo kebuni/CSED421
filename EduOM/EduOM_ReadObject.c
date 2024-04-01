@@ -110,6 +110,26 @@ Four EduOM_ReadObject(
 
     MAKE_PAGEID(pid, oid->volNo, oid->pageNo);
 
+    // 1. Use oid given as a parameter to access an object
+    e = BfM_GetTrain(&pid, &apage, PAGE_BUF);
+    if (e < eNOERROR) ERR(e);
+    offset = apage->slot[-(oid->slotNo)].offset;
+    obj = &(apage->data[offset]);
+
+    // 2. Use start and length given as parameters to read data of the accessed object
+    if (length == REMAINDER)
+        length = obj->header.length - start;
+
+    if (start + length > obj->header.length)
+        ERR(eBADLENGTH_OM);
+
+    memcpy(buf, &(obj->data[start]), length);
+
+    // 3. Return the pointer to the corresponding data
+
+    e = BfM_FreeTrain(&pid, PAGE_BUF);
+    if (e < eNOERROR) ERR(e);
+
     return(length);
     
 } /* EduOM_ReadObject() */
