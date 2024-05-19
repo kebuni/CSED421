@@ -231,7 +231,7 @@ Four EduBtM_Test(Four volId, Four handle){
 				MAKE_PHYSICALFILEID(pFid, catalogOverlay.fid.volNo, catalogOverlay.firstPage);
 
 				/* The successful default solution code is called if "Edu" is omitted from the function name in the following line */
-				e = EduBtM_DropIndex(&pFid, &rootPid, &dlPool, &dlHead);
+				e = BtM_DropIndex(&pFid, &rootPid, &dlPool, &dlHead);
 				if (e < eNOERROR) ERR(e);	
 
 				fprintfWrapper(logFp,"\n");
@@ -675,7 +675,7 @@ void execute(
 			oid.slotNo = *numObjects;
 			oid.unique = (*numObjects)++;
 			/* The successful default solution code is called if "Edu" is omitted from the function name in the following line */
-			e = EduBtM_InsertObject(catalogEntry, rootPid, kdesc, &kval, &oid, NULL, NULL);
+			e = BtM_InsertObject(catalogEntry, rootPid, kdesc, &kval, &oid, NULL, NULL);
 			if (e == eDUPLICATEDKEY_BTM) {
 				fprintfWrapper(logFp, "There is the same key in the B+ tree index.\nEduBtM allows only unique keys\n");
 				if(testType == COVERAGE) {
@@ -715,7 +715,7 @@ void execute(
 			makeKeyValue(keyType, startIntKey, startStringKey, &kval);
 			
 			/* The successful default solution code is called if "Edu" is omitted from the function name in the following line */
-			e = EduBtM_Fetch(rootPid, kdesc, &kval, SM_EQ, &kval, SM_EQ, &cursor);
+			e = BtM_Fetch(rootPid, kdesc, &kval, SM_EQ, &kval, SM_EQ, &cursor);
 			if(e == eNOTSUPPORTED_EDUBTM) {
 				analytics->numNotImplemented++;
 			}
@@ -737,7 +737,7 @@ void execute(
 			else
 			{
 				/* The successful default solution code is called if "Edu" is omitted from the function name in the following line */
-				e = EduBtM_DeleteObject(catalogEntry, rootPid, kdesc, &kval, &(cursor.oid), &dlPool, &dlHead);
+				e = BtM_DeleteObject(catalogEntry, rootPid, kdesc, &kval, &(cursor.oid), &dlPool, &dlHead);
 				if (e == eNOTFOUND_BTM) {
 					fprintfWrapper(logFp,"There is no object that statisfies the condition.\n");
 					
@@ -781,7 +781,7 @@ void execute(
 			makeKeyValue(keyType, endIntKey, endStringKey, &stopKval);
 			
 			/* The successful default solution code is called if "Edu" is omitted from the function name in the following line */	
-			e = EduBtM_Fetch(rootPid, kdesc, &startKval, *startCompOp, &stopKval, *endCompOp, &cursor);
+			e = BtM_Fetch(rootPid, kdesc, &startKval, *startCompOp, &stopKval, *endCompOp, &cursor);
 			if (testType == COVERAGE) {
 				sort(keyType);
 				hashResult = fetch(keyType, *startCompOp, *endCompOp, *startIntKey, startStringKey, *endIntKey, endStringKey);
@@ -846,7 +846,7 @@ void execute(
 			
 			do{
 				/* The successful default solution code is called if "Edu" is omitted from the function name in the following line */
-				e = EduBtM_FetchNext(rootPid, kdesc, &stopKval, *endCompOp, &cursor, &next);
+				e = BtM_FetchNext(rootPid, kdesc, &stopKval, *endCompOp, &cursor, &next);
 				if (testType == COVERAGE) hashResult = fetchNext(keyType, *endCompOp, hashResult, *endIntKey, endStringKey);
 
 				if(e == eNOTSUPPORTED_EDUBTM) {

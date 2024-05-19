@@ -66,7 +66,29 @@ Four edubtm_InitInternal(
     Four e;			/* error number */
     BtreeInternal *page;	/* a page pointer */
 
+    if (IS_NILPAGEID(*internal))
+        ERR(eBADPAGE_BTM);
 
+    e = BfM_GetNewTrain(internal, (char**)&page, PAGE_BUF);
+    if (e!=eNOERROR) ERR(e);
+
+    MAKE_PAGEID(page->hdr.pid, internal->pageNo, internal->volNo);
+    page->hdr.flags = 3;
+    page->hdr.reserved = 0;
+    page->hdr.type = INTERNAL;
+    page->hdr.p0 = NIL;
+    page->hdr.free = 0;
+    page->hdr.unused = 0;
+    page->hdr.nSlots = 0;
+    
+    if (root)
+        page->hdr.type |= ROOT;
+
+    e = BfM_SetDirty(internal, PAGE_BUF);
+    //if (e<0) ERRB1(e, internal, PAGE_BUF);
+    if (e!=eNOERROR) ERR(e);
+    e = BfM_FreeTrain(internal, PAGE_BUF);
+    if (e!=eNOERROR) ERR(e);
     
     return(eNOERROR);
     
@@ -99,7 +121,26 @@ Four edubtm_InitLeaf(
     Four e;			/* error number */
     BtreeLeaf *page;		/* a page pointer */
 
+    e = BfM_GetNewTrain(leaf, (char**)&page, PAGE_BUF);
+    if (e!=eNOERROR) ERR(e);
 
+    page->hdr.pid = *leaf;
+    page->hdr.type = LEAF;
+    page->hdr.flags = 3;
+    page->hdr.reserved = 0;
+    page->hdr.nSlots = 0;
+    page->hdr.free = 0;
+    page->hdr.unused = 0;
+    page->hdr.prevPage = NIL;
+    page->hdr.nextPage = NIL;
+    
+    if (root)
+        page->hdr.type |= ROOT;
+
+    e = BfM_SetDirty(leaf, PAGE_BUF);
+    if (e!=eNOERROR) ERR(e);
+    e = BfM_FreeTrain(leaf, PAGE_BUF);
+    if (e!=eNOERROR) ERR(e);
     
     return(eNOERROR);
     
